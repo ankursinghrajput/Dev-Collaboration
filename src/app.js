@@ -13,6 +13,17 @@ app.post("/signup", async (req, res) => {
     return res.status(201).json({ message: "User created successfully", user });
 });
 
+app.get("/feed", async (req, res) => {
+    const users = await User.find();
+    return res.status(200).json({ users });
+});
+
+app.delete("/delete/:id", async (req, res) => {
+    const { id } = req.params;
+    const user = await User.findByIdAndDelete(id);
+    return res.status(200).json({ message: "User deleted successfully", user });
+});
+
 connectDb().then(() => {
     console.log("Database Connected");
     const PORT = process.env.PORT || 7000;
