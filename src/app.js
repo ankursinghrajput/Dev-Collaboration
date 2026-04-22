@@ -1,5 +1,6 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const cookieParser = require("cookie-parser");
 const connectDb = require("../config/database");
 const authRouter = require("../Routes/auth");
 const profileRouter = require("../Routes/profile");
@@ -9,6 +10,7 @@ dotenv.config();
 
 const app = express();
 app.use(express.json());
+app.use(cookieParser());
 
 app.use("/", authRouter);
 app.use("/profile", profileRouter);

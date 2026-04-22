@@ -23,7 +23,13 @@ authRouter.post("/login", validateLogin, async (req, res) => {
         return res.status(401).json({ message: "Invalid credentials" });
     }
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    return res.status(200).json({ message: "User logged in successfully", user, token });
+    res.cookie("token", token, { httpOnly: true });
+    return res.status(200).json({ message: "User logged in successfully!" });
+});
+
+authRouter.post("/logout", (req, res) => {
+    res.cookie("token", null, { expires: new Date(Date.now()) });
+    return res.status(200).json({ message: "User logged out successfully" });
 });
 
 module.exports = authRouter;
