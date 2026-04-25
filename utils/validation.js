@@ -25,4 +25,10 @@ const validateLogin = (req, res, next) => {
     next();
 }
 
-module.exports = { validateSignup, validateLogin };
+const validateEditProfile = (req) => {
+    const allowedFields = ["name", "age", "gender", "photoUrl", "about", "skills"];
+    const isEditAllowed = Object.keys(req.body).every((field) => allowedFields.includes(field));
+    return isEditAllowed;
+}
+
+module.exports = { validateSignup, validateLogin, validateEditProfile };
