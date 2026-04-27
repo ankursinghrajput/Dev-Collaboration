@@ -5,6 +5,7 @@ const connectDb = require("../config/database");
 const authRouter = require("../Routes/auth");
 const profileRouter = require("../Routes/profile");
 const userRouter = require("../Routes/user");
+const requestRouter = require("../Routes/request");
 
 dotenv.config();
 
@@ -15,6 +16,7 @@ app.use(cookieParser());
 app.use("/", authRouter);
 app.use("/profile", profileRouter);
 app.use("/user", userRouter);
+app.use("/", requestRouter);
 
 connectDb().then(() => {
     console.log("Database Connected");

@@ -6,11 +6,8 @@ const userSchema = new mongoose.Schema({
     password: { type: String, required: true, validate(value) { if (!validator.isStrongPassword(value)) { throw new Error("Password must be strong"); } } },
     age: { type: Number, min: 18 },
     gender: {
-        type: String, validate(value) {
-            if (value !== "male" && value !== "female" && value !== "other") {
-                throw new Error("Gender must be male, female or other");
-            }
-        }
+        type: String,
+        enum: ["male", "female", "other"]
     },
     photoUrl: {
         type: String,
