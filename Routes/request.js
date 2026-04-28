@@ -9,6 +9,13 @@ requestRouter.post("/request/send/:status/:id", userAuth, async (req, res) => {
         const sender = req.user._id;
         const receiver = req.params.id;
         const status = req.params.status;
+
+        // Validate status
+        const allowedStatus = ["interested", "not_interested"];
+        if (!allowedStatus.includes(status)) {
+            return res.status(400).json({ message: "Invalid status. Allowed: interested, not_interested" });
+        }
+
         if (sender.toString() === receiver.toString()) {
             return res.status(400).json({ message: "You cannot send a request to yourself" });
         }
@@ -17,7 +24,7 @@ requestRouter.post("/request/send/:status/:id", userAuth, async (req, res) => {
         if (existingRequest) {
             return res.status(400).json({ message: "Request already sent" });
         }
-        //If user is not exists.
+        //If user does not exist
         const existUser = await User.findById(receiver);
         if (!existUser) {
             return res.status(404).json({ message: "User not found" });
@@ -30,6 +37,34 @@ requestRouter.post("/request/send/:status/:id", userAuth, async (req, res) => {
     }
 })
 
+requestRouter.post("/request/review/:status/:id", userAuth, async (req, res) => {
+    try {
+        const loggedInUser = req.user._id;
+        const { status, id } = req.params;
 
+        const allowedStatus = ["accepted", "rejected"];
+        if (!allowedStatus.includes(status)) {
+            return res.status(400).json({ message: "Invalid status" });
+        }
+
+        const connectionRequest = await ConnRequest.findOne({
+            _id: id,
+            receiver: loggedInUser,
+            status: "interested"
+        });
+
+        if (!connectionRequest) {
+            return res.status(404).json({ message: "Connection Request not found" });
+        }
+
+        connectionRequest.status = status;
+        await connectionRequest.save();
+
+        return res.status(200).json({ message: "Connection request " + status, connectionRequest });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+})
 
 module.exports = requestRouter;
