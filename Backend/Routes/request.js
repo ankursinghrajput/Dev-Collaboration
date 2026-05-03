@@ -57,8 +57,12 @@ requestRouter.post("/request/review/:status/:id", userAuth, async (req, res) => 
             return res.status(404).json({ message: "Connection Request not found" });
         }
 
-        connectionRequest.status = status;
-        await connectionRequest.save();
+        if (status === "rejected") {
+            await ConnRequest.findByIdAndDelete(connectionRequest._id);
+        } else {
+            connectionRequest.status = status;
+            await connectionRequest.save();
+        }
 
         return res.status(200).json({ message: "Connection request " + status, connectionRequest });
 
@@ -66,5 +70,31 @@ requestRouter.post("/request/review/:status/:id", userAuth, async (req, res) => 
         return res.status(500).json({ message: "Internal server error" });
     }
 })
+
+// Unfollow / Disconnect from a user
+requestRouter.delete("/request/unfollow/:userId", userAuth, async (req, res) => {
+    try {
+        const loggedInUser = req.user._id;
+        const targetUserId = req.params.userId;
+
+        // Find the accepted connection between the two users
+        const connection = await ConnRequest.findOne({
+            $or: [
+                { sender: loggedInUser, receiver: targetUserId, status: "accepted" },
+                { sender: targetUserId, receiver: loggedInUser, status: "accepted" }
+            ]
+        });
+
+        if (!connection) {
+            return res.status(404).json({ message: "Connection not found" });
+        }
+
+        await ConnRequest.findByIdAndDelete(connection._id);
+        return res.status(200).json({ message: "Successfully unfollowed" });
+
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 module.exports = requestRouter;

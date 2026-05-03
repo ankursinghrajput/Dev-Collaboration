@@ -11,9 +11,10 @@ const userSchema = new mongoose.Schema({
     },
     photoUrl: {
         type: String,
+        default: '',
         validate(value) {
-            if (!validator.isURL(value)) {
-                throw new Error("Invalid photo URL");
+            if (value && value.length > 0 && !validator.isURL(value, { require_protocol: true })) {
+                throw new Error("Invalid photo URL. Must start with http:// or https://");
             }
         }
     },

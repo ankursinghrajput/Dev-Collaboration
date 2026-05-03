@@ -1,6 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 
-const UserCard = ({ user, onAction }) => {
+const UserCard = ({ user, onAction, reviewMode, requestId, connectionMode, onUnfollow }) => {
+  const [actionLoading, setActionLoading] = useState(null);
+
+  const handleAction = async (status, id) => {
+    if (!onAction) return;
+    setActionLoading(status);
+    try {
+      await onAction(status, id);
+    } finally {
+      setActionLoading(null);
+    }
+  };
+
   return (
     <div 
       className="user-card"
@@ -75,34 +87,120 @@ const UserCard = ({ user, onAction }) => {
           </div>
         )}
 
-        {/* Footer Actions */}
-        {onAction && (
+        {/* Feed Mode Actions (Connect / Pass) */}
+        {onAction && !reviewMode && !connectionMode && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', gap: '1rem' }}>
              <button 
-              onClick={() => onAction('not_interested', user._id)}
+              onClick={() => handleAction('not_interested', user._id)}
+              disabled={actionLoading !== null}
+              className="card-btn-pass"
               style={{ 
-              backgroundColor: 'transparent', 
-              color: 'var(--text-secondary)', 
-              border: '2px solid var(--border-color)', 
-              padding: '0.5rem 1.25rem', 
-              borderRadius: 'var(--radius-md)', 
-              fontWeight: '600',
-              cursor: 'pointer'
-            }}>
-              Pass
+                backgroundColor: 'transparent', 
+                color: 'var(--text-secondary)', 
+                border: '2px solid var(--border-color)', 
+                padding: '0.5rem 1.25rem', 
+                borderRadius: 'var(--radius-md)', 
+                fontWeight: '600',
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                opacity: actionLoading === 'not_interested' ? 0.6 : 1,
+                transition: 'all 0.2s ease'
+              }}>
+              {actionLoading === 'not_interested' ? '...' : '✕  Pass'}
             </button>
             <button 
-              onClick={() => onAction('interested', user._id)}
+              onClick={() => handleAction('interested', user._id)}
+              disabled={actionLoading !== null}
+              className="card-btn-connect"
               style={{ 
-              backgroundColor: '#1d8082', 
-              color: 'white', 
-              border: 'none', 
-              padding: '0.5rem 1.25rem', 
-              borderRadius: 'var(--radius-md)', 
+                backgroundColor: '#6366f1', 
+                color: 'white', 
+                border: 'none', 
+                padding: '0.5rem 1.25rem', 
+                borderRadius: 'var(--radius-md)', 
+                fontWeight: '600',
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                opacity: actionLoading === 'interested' ? 0.6 : 1,
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(99, 102, 241, 0.3)'
+              }}>
+              {actionLoading === 'interested' ? '...' : '🤝  Connect'}
+            </button>
+          </div>
+        )}
+
+        {/* Review Mode Actions (Accept / Reject) */}
+        {onAction && reviewMode && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', gap: '1rem' }}>
+            <button 
+              onClick={() => handleAction('rejected', requestId)}
+              disabled={actionLoading !== null}
+              className="card-btn-reject"
+              style={{ 
+                backgroundColor: 'transparent', 
+                color: '#ef4444', 
+                border: '2px solid #ef4444', 
+                padding: '0.5rem 1.25rem', 
+                borderRadius: 'var(--radius-md)', 
+                fontWeight: '600',
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                opacity: actionLoading === 'rejected' ? 0.6 : 1,
+                transition: 'all 0.2s ease'
+              }}>
+              {actionLoading === 'rejected' ? '...' : '✕  Reject'}
+            </button>
+            <button 
+              onClick={() => handleAction('accepted', requestId)}
+              disabled={actionLoading !== null}
+              className="card-btn-accept"
+              style={{ 
+                backgroundColor: '#10b981', 
+                color: 'white', 
+                border: 'none', 
+                padding: '0.5rem 1.25rem', 
+                borderRadius: 'var(--radius-md)', 
+                fontWeight: '600',
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                opacity: actionLoading === 'accepted' ? 0.6 : 1,
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(16, 185, 129, 0.3)'
+              }}>
+              {actionLoading === 'accepted' ? '...' : '✓  Accept'}
+            </button>
+          </div>
+        )}
+
+        {/* Connection Mode (Unfollow) */}
+        {connectionMode && onUnfollow && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', gap: '1rem', alignItems: 'center' }}>
+            <span style={{
+              fontSize: '0.8rem',
               fontWeight: '600',
-              cursor: 'pointer'
+              color: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              padding: '0.3rem 0.75rem',
+              borderRadius: 'var(--radius-full)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem'
             }}>
-              Connect & Message
+              ✓ Connected
+            </span>
+            <button
+              onClick={onUnfollow}
+              className="card-btn-reject"
+              style={{
+                backgroundColor: 'transparent',
+                color: '#ef4444',
+                border: '1.5px solid #ef4444',
+                padding: '0.45rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: '600',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+            >
+              Unfollow
             </button>
           </div>
         )}

@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useContext, useState, useRef, useEffect } from 'react';
+import { useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { UserContext } from '../context/UserContext';
 import axios from 'axios';
 
@@ -10,29 +10,72 @@ const Navbar = () => {
   const isLoginPage = location.pathname === '/login' || location.pathname === '/signup';
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
+  const [requestsDropdownOpen, setRequestsDropdownOpen] = useState(false);
+  const [pendingRequests, setPendingRequests] = useState([]);
   const avatarMenuRef = useRef(null);
+  const requestsDropdownRef = useRef(null);
 
   const mainLinks = [
     { name: 'Feed', path: '/feed' },
     { name: 'Connections', path: '/connections' },
-    { name: 'Messages', path: '/messages' },
   ];
+
+  // Close all dropdowns on route change
+  useEffect(() => {
+    setMobileMenuOpen(false);
+    setAvatarMenuOpen(false);
+    setRequestsDropdownOpen(false);
+  }, [location.pathname]);
+
+  // Fetch pending requests
+  const fetchPendingRequests = useCallback(async () => {
+    if (!user) return;
+    try {
+      const response = await axios.get('/api/user/requests/received');
+      if (response.data.receivedRequests) {
+        setPendingRequests(response.data.receivedRequests);
+      }
+    } catch (err) {
+      // Silently fail - user may not be authenticated yet
+    }
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchPendingRequests();
+      const interval = setInterval(fetchPendingRequests, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user, fetchPendingRequests]);
+
+  const handleReviewRequest = async (status, requestId) => {
+    try {
+      await axios.post(`/api/request/review/${status}/${requestId}`);
+      setPendingRequests(prev => prev.filter(r => r._id !== requestId));
+    } catch (err) {
+      console.error('Failed to review request', err);
+    }
+  };
 
   const handleLogout = async () => {
     try {
       await axios.post('/api/logout');
       setUser(null);
+      setPendingRequests([]);
       navigate('/login');
     } catch (error) {
       console.error("Logout failed", error);
     }
   };
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (avatarMenuRef.current && !avatarMenuRef.current.contains(event.target)) {
         setAvatarMenuOpen(false);
+      }
+      if (requestsDropdownRef.current && !requestsDropdownRef.current.contains(event.target)) {
+        setRequestsDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -93,11 +136,221 @@ const Navbar = () => {
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {!isLoginPage && user ? (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              
+              {/* Connection Requests Bell Icon */}
+              <div style={{ position: 'relative' }} ref={requestsDropdownRef}>
+                <button
+                  id="requests-bell-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRequestsDropdownOpen(prev => !prev);
+                    setAvatarMenuOpen(false);
+                  }}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '1.35rem',
+                    color: 'var(--text-secondary)',
+                    position: 'relative',
+                    padding: '0.35rem',
+                    borderRadius: 'var(--radius-md)',
+                    transition: 'all 0.2s ease',
+                    backgroundColor: requestsDropdownOpen ? 'rgba(99, 102, 241, 0.1)' : 'transparent'
+                  }}
+                >
+                  🔔
+                  {pendingRequests.length > 0 && (
+                    <span style={{
+                      position: 'absolute',
+                      top: '-2px',
+                      right: '-4px',
+                      backgroundColor: '#ef4444',
+                      color: 'white',
+                      fontSize: '0.65rem',
+                      fontWeight: '700',
+                      width: '18px',
+                      height: '18px',
+                      borderRadius: '50%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '2px solid var(--surface-color)',
+                      animation: 'pulseNotif 2s ease-in-out infinite'
+                    }}>
+                      {pendingRequests.length}
+                    </span>
+                  )}
+                </button>
+
+                {/* Requests Dropdown */}
+                {requestsDropdownOpen && (
+                  <div style={{
+                    position: 'absolute',
+                    top: '120%',
+                    right: 0,
+                    width: '360px',
+                    maxHeight: '480px',
+                    overflowY: 'auto',
+                    background: 'var(--surface-color)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: 'var(--radius-lg)',
+                    boxShadow: 'var(--shadow-lg)',
+                    zIndex: 100,
+                    animation: 'dropdownSlide 0.2s ease-out'
+                  }}>
+                    {/* Dropdown Header */}
+                    <div style={{
+                      padding: '1rem 1.25rem',
+                      borderBottom: '1px solid var(--border-color)',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <h3 style={{ fontSize: '0.95rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+                        Connection Requests
+                      </h3>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        fontWeight: '600',
+                        color: pendingRequests.length > 0 ? '#6366f1' : 'var(--text-secondary)',
+                        backgroundColor: pendingRequests.length > 0 ? 'rgba(99, 102, 241, 0.1)' : 'transparent',
+                        padding: '0.2rem 0.6rem',
+                        borderRadius: 'var(--radius-full)'
+                      }}>
+                        {pendingRequests.length} pending
+                      </span>
+                    </div>
+
+                    {/* Requests List */}
+                    {pendingRequests.length === 0 ? (
+                      <div style={{ 
+                        padding: '2.5rem 1.25rem', 
+                        textAlign: 'center', 
+                        color: 'var(--text-secondary)',
+                        fontSize: '0.875rem'
+                      }}>
+                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.5 }}>📭</div>
+                        No pending requests
+                      </div>
+                    ) : (
+                      <div>
+                        {pendingRequests.map((request) => (
+                          <div key={request._id} style={{
+                            padding: '1rem 1.25rem',
+                            borderBottom: '1px solid var(--border-color)',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.75rem',
+                            transition: 'background-color 0.15s ease'
+                          }}
+                          className="request-item"
+                          >
+                            {/* Avatar */}
+                            <div style={{
+                              width: '44px',
+                              height: '44px',
+                              borderRadius: '50%',
+                              overflow: 'hidden',
+                              backgroundColor: '#f3f4f6',
+                              flexShrink: 0,
+                              border: '2px solid var(--border-color)'
+                            }}>
+                              {request.sender?.photoUrl ? (
+                                <img src={request.sender.photoUrl} alt={request.sender.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ) : (
+                                <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', fontWeight: 'bold', color: 'var(--text-secondary)', backgroundColor: 'rgba(99, 102, 241, 0.1)' }}>
+                                  {request.sender?.name?.charAt(0).toUpperCase() || '?'}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Name */}
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{ fontWeight: '600', fontSize: '0.9rem', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                {request.sender?.name || 'Unknown'}
+                              </p>
+                              <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0.15rem 0 0 0' }}>
+                                wants to connect
+                              </p>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div style={{ display: 'flex', gap: '0.4rem', flexShrink: 0 }}>
+                              <button
+                                id={`reject-btn-${request._id}`}
+                                onClick={() => handleReviewRequest('rejected', request._id)}
+                                style={{
+                                  padding: '0.35rem 0.7rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  borderRadius: 'var(--radius-md)',
+                                  border: '1.5px solid #ef4444',
+                                  backgroundColor: 'transparent',
+                                  color: '#ef4444',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease'
+                                }}
+                              >
+                                Reject
+                              </button>
+                              <button
+                                id={`accept-btn-${request._id}`}
+                                onClick={() => handleReviewRequest('accepted', request._id)}
+                                style={{
+                                  padding: '0.35rem 0.7rem',
+                                  fontSize: '0.75rem',
+                                  fontWeight: '600',
+                                  borderRadius: 'var(--radius-md)',
+                                  border: 'none',
+                                  backgroundColor: '#10b981',
+                                  color: 'white',
+                                  cursor: 'pointer',
+                                  transition: 'all 0.2s ease',
+                                  boxShadow: '0 1px 4px rgba(16, 185, 129, 0.3)'
+                                }}
+                              >
+                                Accept
+                              </button>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+
+                    {/* View All Link */}
+                    {pendingRequests.length > 0 && (
+                      <Link
+                        to="/connections"
+                        onClick={() => setRequestsDropdownOpen(false)}
+                        style={{
+                          display: 'block',
+                          textAlign: 'center',
+                          padding: '0.75rem',
+                          fontSize: '0.85rem',
+                          fontWeight: '600',
+                          color: 'var(--accent-primary)',
+                          textDecoration: 'none',
+                          borderTop: '1px solid var(--border-color)',
+                          transition: 'background-color 0.15s ease'
+                        }}
+                      >
+                        View all in Connections →
+                      </Link>
+                    )}
+                  </div>
+                )}
+              </div>
+
               {/* Avatar Dropdown */}
               <div className="desktop-only" style={{ position: 'relative' }} ref={avatarMenuRef}>
                 <button 
-                  onClick={() => setAvatarMenuOpen(!avatarMenuOpen)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setAvatarMenuOpen(prev => !prev);
+                    setRequestsDropdownOpen(false);
+                  }}
                   style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', background: 'none', border: 'none', cursor: 'pointer' }}
                 >
                   <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-secondary)' }}>
@@ -130,7 +383,8 @@ const Navbar = () => {
                     boxShadow: 'var(--shadow-lg)',
                     display: 'flex',
                     flexDirection: 'column',
-                    overflow: 'hidden'
+                    overflow: 'hidden',
+                    animation: 'dropdownSlide 0.2s ease-out'
                   }}>
                     <Link to="/profile" onClick={() => setAvatarMenuOpen(false)} style={{ padding: '0.75rem 1rem', color: 'var(--text-primary)', textDecoration: 'none', fontSize: '0.875rem', borderBottom: '1px solid var(--border-color)' }}>
                       My Profile

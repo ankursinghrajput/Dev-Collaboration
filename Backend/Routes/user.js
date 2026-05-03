@@ -24,8 +24,7 @@ userRouter.get("/user/connections", userAuth, async (req, res) => {
         const connections = await ConnRequest.find({
             $or: [
                 { sender: loggedInUser, status: "accepted" },
-                { receiver: loggedInUser, status: "accepted" },
-                { sender: loggedInUser, status: "interested" }
+                { receiver: loggedInUser, status: "accepted" }
             ]
         }).populate("sender", "name photoUrl age gender about skills").populate("receiver", "name photoUrl age gender about skills");
         const data = connections.map((row) => {
@@ -50,6 +49,7 @@ userRouter.get("/feed", userAuth, async (req, res) => {
         const loggedInUser = req.user._id;
         const connectionRequest = await ConnRequest.find({
             $or: [{ sender: loggedInUser }, { receiver: loggedInUser }],
+            status: { $in: ["interested", "accepted", "not_interested"] }
         }).select("sender receiver");
 
         const hideUsersFromFeed = new Set();

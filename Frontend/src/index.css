@@ -179,3 +179,50 @@ button {
   transform: translateY(-4px) !important;
   box-shadow: var(--shadow-lg) !important;
 }
+
+/* Notification badge pulse */
+@keyframes pulseNotif {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.15); }
+}
+
+/* Dropdown slide-in */
+@keyframes dropdownSlide {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* Request item hover */
+.request-item:hover {
+  background-color: rgba(99, 102, 241, 0.04) !important;
+}
+
+/* Card button hovers */
+.card-btn-connect:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4) !important;
+}
+
+.card-btn-pass:hover {
+  background-color: rgba(0, 0, 0, 0.03) !important;
+}
+
+.card-btn-accept:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(16, 185, 129, 0.4) !important;
+}
+
+.card-btn-reject:hover {
+  background-color: rgba(239, 68, 68, 0.05) !important;
+}
+
+/* Modal animations */
+@keyframes modalFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modalSlideUp {
+  from { opacity: 0; transform: translateY(16px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
