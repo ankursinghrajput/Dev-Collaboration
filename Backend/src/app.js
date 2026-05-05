@@ -1,5 +1,7 @@
 const express = require("express");
 const dotenv = require("dotenv");
+dotenv.config();
+
 const cookieParser = require("cookie-parser");
 const connectDb = require("../config/database");
 const authRouter = require("../Routes/auth");
@@ -7,11 +9,12 @@ const profileRouter = require("../Routes/profile");
 const userRouter = require("../Routes/user");
 const requestRouter = require("../Routes/request");
 
-dotenv.config();
+const passport = require("../config/passport");
 
 const app = express();
 app.use(express.json());
 app.use(cookieParser());
+app.use(passport.initialize());
 
 app.use("/", authRouter);
 app.use("/profile", profileRouter);

@@ -3,7 +3,23 @@ const validator = require("validator");
 const userSchema = new mongoose.Schema({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true, lowercase: true, trim: true, validate(value) { if (!validator.isEmail(value)) { throw new Error("Invalid email address"); } } },
-    password: { type: String, required: true, validate(value) { if (!validator.isStrongPassword(value)) { throw new Error("Password must be strong"); } } },
+    password: { 
+        type: String, 
+        required: function() { return this.authProvider === 'local'; }, 
+        validate(value) { 
+            if (value && !validator.isStrongPassword(value)) { 
+                throw new Error("Password must be strong"); 
+            } 
+        } 
+    },
+    authProvider: {
+        type: String,
+        enum: ['local', 'google', 'github'],
+        default: 'local'
+    },
+    providerId: {
+        type: String
+    },
     age: { type: Number, min: 18 },
     gender: {
         type: String,

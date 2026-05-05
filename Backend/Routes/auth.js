@@ -27,9 +27,28 @@ authRouter.post("/login", validateLogin, async (req, res) => {
     return res.status(200).json({ message: "User logged in successfully!" });
 });
 
+const passport = require('passport');
+
 authRouter.post("/logout", (req, res) => {
     res.cookie("token", null, { expires: new Date(Date.now()) });
     return res.status(200).json({ message: "User logged out successfully" });
+});
+
+// OAuth Routes
+authRouter.get('/auth/google', passport.authenticate('google', { scope: ['profile', 'email'], session: false }));
+
+authRouter.get('/auth/google/callback', passport.authenticate('google', { session: false, failureRedirect: 'http://localhost:5173/login' }), (req, res) => {
+    const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    res.cookie("token", token, { httpOnly: true });
+    res.redirect('http://localhost:5173/feed');
+});
+
+authRouter.get('/auth/github', passport.authenticate('github', { scope: ['user:email'], session: false }));
+
+authRouter.get('/auth/github/callback', passport.authenticate('github', { session: false, failureRedirect: 'http://localhost:5173/login' }), (req, res) => {
+    const token = jwt.sign({ id: req.user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
+    res.cookie("token", token, { httpOnly: true });
+    res.redirect('http://localhost:5173/feed');
 });
 
 module.exports = authRouter;

@@ -70,5 +70,58 @@ userRouter.get("/feed", userAuth, async (req, res) => {
         return res.status(500).json({ message: "Internal server error" })
     }
 })
+userRouter.get("/user/requests/sent", userAuth, async (req, res) => {
+    try {
+        const loggedInUser = req.user._id;
+        const sentRequests = await ConnRequest.find({
+            sender: loggedInUser,
+            status: "interested"
+        }).populate("receiver", "name photoUrl age about");
+        return res.status(200).json({ sentRequests });
+    }
+    catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+
+userRouter.get("/user/search", userAuth, async (req, res) => {
+    try {
+        const query = req.query.q;
+        if (!query) {
+            return res.status(200).json({ users: [] });
+        }
+        
+        const loggedInUser = req.user._id;
+        
+        const users = await User.find({
+            $and: [
+                { _id: { $ne: loggedInUser } },
+                {
+                    $or: [
+                        { name: { $regex: query, $options: "i" } },
+                        { skills: { $regex: query, $options: "i" } }
+                    ]
+                }
+            ]
+        }).select("name photoUrl age gender about skills").limit(10);
+        
+        return res.status(200).json({ users });
+    }
+    catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
+userRouter.get("/user/:id", userAuth, async (req, res) => {
+    try {
+        const userId = req.params.id;
+        const user = await User.findById(userId).select("name photoUrl age gender about skills");
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
+        }
+        return res.status(200).json({ user });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 module.exports = userRouter;

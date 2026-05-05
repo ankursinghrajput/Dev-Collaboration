@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 
-const UserCard = ({ user, onAction, reviewMode, requestId, connectionMode, onUnfollow }) => {
+const UserCard = ({ user, onAction, reviewMode, requestId, connectionMode, onUnfollow, sentMode, onCancel }) => {
   const [actionLoading, setActionLoading] = useState(null);
 
   const handleAction = async (status, id) => {
@@ -201,6 +201,51 @@ const UserCard = ({ user, onAction, reviewMode, requestId, connectionMode, onUnf
               }}
             >
               Unfollow
+            </button>
+          </div>
+        )}
+
+        {/* Sent Mode Actions (Cancel Request) */}
+        {sentMode && onCancel && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', gap: '1rem', alignItems: 'center' }}>
+            <span style={{
+              fontSize: '0.8rem',
+              fontWeight: '600',
+              color: '#3b82f6',
+              backgroundColor: 'rgba(59, 130, 246, 0.1)',
+              padding: '0.3rem 0.75rem',
+              borderRadius: 'var(--radius-full)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.3rem'
+            }}>
+              ⏳ Pending
+            </span>
+            <button
+              onClick={async () => {
+                setActionLoading('cancel');
+                try {
+                  await onCancel(requestId);
+                } finally {
+                  setActionLoading(null);
+                }
+              }}
+              disabled={actionLoading !== null}
+              className="card-btn-reject"
+              style={{
+                backgroundColor: 'transparent',
+                color: 'var(--text-secondary)',
+                border: '1.5px solid var(--border-color)',
+                padding: '0.45rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: '600',
+                fontSize: '0.85rem',
+                cursor: actionLoading ? 'not-allowed' : 'pointer',
+                transition: 'all 0.2s ease',
+                opacity: actionLoading ? 0.6 : 1
+              }}
+            >
+              {actionLoading === 'cancel' ? '...' : 'Cancel Request'}
             </button>
           </div>
         )}

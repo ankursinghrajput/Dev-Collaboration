@@ -6,6 +6,7 @@ import Feed from './pages/Feed';
 import Connections from './pages/Connections';
 import EditProfile from './pages/EditProfile';
 import Profile from './pages/Profile';
+import UserProfile from './pages/UserProfile';
 import { UserProvider } from './context/UserContext';
 
 function App() {
@@ -21,6 +22,7 @@ function App() {
             <Route path="/feed" element={<Feed />} />
             <Route path="/connections" element={<Connections />} />
             <Route path="/profile" element={<Profile />} />
+            <Route path="/user/:id" element={<UserProfile />} />
             <Route path="/profile/edit" element={<EditProfile />} />
           </Routes>
         </main>

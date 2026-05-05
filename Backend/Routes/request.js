@@ -96,5 +96,26 @@ requestRouter.delete("/request/unfollow/:userId", userAuth, async (req, res) => 
         return res.status(500).json({ message: "Internal server error" });
     }
 });
+requestRouter.delete("/request/cancel/:requestId", userAuth, async (req, res) => {
+    try {
+        const loggedInUser = req.user._id;
+        const requestId = req.params.requestId;
+
+        const connectionRequest = await ConnRequest.findOne({
+            _id: requestId,
+            sender: loggedInUser,
+            status: "interested"
+        });
+
+        if (!connectionRequest) {
+            return res.status(404).json({ message: "Connection request not found or already processed" });
+        }
+
+        await ConnRequest.findByIdAndDelete(requestId);
+        return res.status(200).json({ message: "Request cancelled successfully" });
+    } catch (error) {
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 
 module.exports = requestRouter;

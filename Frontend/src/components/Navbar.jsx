@@ -12,8 +12,13 @@ const Navbar = () => {
   const [avatarMenuOpen, setAvatarMenuOpen] = useState(false);
   const [requestsDropdownOpen, setRequestsDropdownOpen] = useState(false);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const [searchDropdownOpen, setSearchDropdownOpen] = useState(false);
   const avatarMenuRef = useRef(null);
   const requestsDropdownRef = useRef(null);
+  const searchRef = useRef(null);
 
   const mainLinks = [
     { name: 'Feed', path: '/feed' },
@@ -25,7 +30,32 @@ const Navbar = () => {
     setMobileMenuOpen(false);
     setAvatarMenuOpen(false);
     setRequestsDropdownOpen(false);
+    setSearchDropdownOpen(false);
+    setSearchQuery('');
   }, [location.pathname]);
+
+  // Search logic
+  useEffect(() => {
+    const delayDebounceFn = setTimeout(async () => {
+      if (searchQuery.trim().length > 0) {
+        setIsSearching(true);
+        try {
+          const res = await axios.get(`/api/user/search?q=${searchQuery}`);
+          setSearchResults(res.data.users || []);
+          setSearchDropdownOpen(true);
+        } catch (err) {
+          console.error("Search failed", err);
+        } finally {
+          setIsSearching(false);
+        }
+      } else {
+        setSearchResults([]);
+        setSearchDropdownOpen(false);
+      }
+    }, 400);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
 
   // Fetch pending requests
   const fetchPendingRequests = useCallback(async () => {
@@ -76,6 +106,9 @@ const Navbar = () => {
       }
       if (requestsDropdownRef.current && !requestsDropdownRef.current.contains(event.target)) {
         setRequestsDropdownOpen(false);
+      }
+      if (searchRef.current && !searchRef.current.contains(event.target)) {
+        setSearchDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -133,6 +166,89 @@ const Navbar = () => {
             </div>
           )}
         </div>
+        
+        {/* --- Search Bar --- */}
+        {!isLoginPage && user && (
+          <div className="desktop-only" style={{ flex: 1, maxWidth: '400px', margin: '0 2rem', position: 'relative' }} ref={searchRef}>
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', width: '100%' }}>
+              <span style={{ position: 'absolute', left: '12px', color: 'var(--text-secondary)' }}>🔍</span>
+              <input
+                type="text"
+                placeholder="Search developers..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onFocus={() => { if (searchQuery.trim().length > 0) setSearchDropdownOpen(true); }}
+                style={{
+                  width: '100%',
+                  padding: '0.6rem 1rem 0.6rem 2.5rem',
+                  borderRadius: 'var(--radius-full)',
+                  border: '1px solid var(--border-color)',
+                  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+                  color: 'var(--text-primary)',
+                  fontSize: '0.875rem',
+                  outline: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              />
+            </div>
+            
+            {searchDropdownOpen && (
+              <div style={{
+                position: 'absolute',
+                top: 'calc(100% + 0.5rem)',
+                left: 0,
+                right: 0,
+                background: 'var(--surface-color)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-md)',
+                boxShadow: 'var(--shadow-lg)',
+                zIndex: 100,
+                maxHeight: '400px',
+                overflowY: 'auto'
+              }}>
+                {isSearching ? (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>Searching...</div>
+                ) : searchResults.length > 0 ? (
+                  searchResults.map(u => (
+                    <Link 
+                      to={`/user/${u._id}`} 
+                      key={u._id} 
+                      onClick={() => {
+                        setSearchDropdownOpen(false);
+                        setSearchQuery('');
+                      }}
+                      style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        gap: '0.75rem', 
+                        padding: '0.75rem 1rem', 
+                        borderBottom: '1px solid var(--border-color)',
+                        textDecoration: 'none',
+                        color: 'inherit',
+                        transition: 'background-color 0.15s ease'
+                      }}
+                      className="search-result-item"
+                    >
+                      <div style={{ width: '32px', height: '32px', borderRadius: '50%', overflow: 'hidden', flexShrink: 0, backgroundColor: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {u.photoUrl ? (
+                          <img src={u.photoUrl} alt={u.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                        ) : (
+                          <span style={{ color: 'var(--accent-primary)', fontSize: '0.85rem', fontWeight: 'bold' }}>{u.name.charAt(0).toUpperCase()}</span>
+                        )}
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                        <span style={{ fontSize: '0.875rem', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.name}</span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{u.skills?.[0] || 'Developer'}</span>
+                      </div>
+                    </Link>
+                  ))
+                ) : (
+                  <div style={{ padding: '1rem', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>No developers found.</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
         
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
           {!isLoginPage && user ? (

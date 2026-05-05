@@ -7,6 +7,7 @@ import { UserContext } from '../context/UserContext';
 const Connections = () => {
   const [connections, setConnections] = useState([]);
   const [pendingRequests, setPendingRequests] = useState([]);
+  const [sentRequests, setSentRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [unfollowTarget, setUnfollowTarget] = useState(null); // user to confirm unfollow
@@ -16,15 +17,19 @@ const Connections = () => {
 
   const fetchData = async () => {
     try {
-      const [connectionsRes, requestsRes] = await Promise.all([
+      const [connectionsRes, requestsRes, sentRequestsRes] = await Promise.all([
         axios.get('/api/user/connections'),
-        axios.get('/api/user/requests/received')
+        axios.get('/api/user/requests/received'),
+        axios.get('/api/user/requests/sent')
       ]);
       if (connectionsRes.data.data) {
         setConnections(connectionsRes.data.data);
       }
       if (requestsRes.data.receivedRequests) {
         setPendingRequests(requestsRes.data.receivedRequests);
+      }
+      if (sentRequestsRes.data.sentRequests) {
+        setSentRequests(sentRequestsRes.data.sentRequests);
       }
     } catch (err) {
       if (err.response?.status === 401) {
@@ -58,6 +63,15 @@ const Connections = () => {
       }
     } catch (err) {
       console.error('Failed to review request', err);
+    }
+  };
+
+  const handleCancelRequest = async (requestId) => {
+    try {
+      await axios.delete(`/api/request/cancel/${requestId}`);
+      setSentRequests(prev => prev.filter(r => r._id !== requestId));
+    } catch (err) {
+      console.error('Failed to cancel request', err);
     }
   };
 
@@ -121,6 +135,52 @@ const Connections = () => {
                 reviewMode={true}
                 requestId={request._id}
                 onAction={handleReviewRequest}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* ── Divider ── */}
+        <div style={{
+          height: '1px',
+          background: 'linear-gradient(90deg, transparent, var(--border-color), transparent)',
+          margin: '1rem 0 2rem 0'
+        }} />
+
+        {/* ── Sent Requests Section ── */}
+        <header style={{ marginBottom: '1.5rem' }}>
+          <h1 style={{ fontSize: '2rem', fontWeight: '800', letterSpacing: '-0.025em', color: 'var(--text-primary)' }}>
+            Sent Requests
+          </h1>
+          <p style={{ color: 'var(--text-secondary)', marginTop: '0.25rem', fontSize: '1rem' }}>
+            People you want to connect with
+          </p>
+        </header>
+
+        {loading ? (
+          <p style={{ color: 'var(--text-secondary)' }}>Loading sent requests...</p>
+        ) : sentRequests.length === 0 ? (
+          <div style={{
+            textAlign: 'center',
+            padding: '2.5rem 2rem',
+            backgroundColor: 'var(--surface-color)',
+            borderRadius: 'var(--radius-lg)',
+            border: '1px dashed var(--border-color)',
+            marginBottom: '3rem'
+          }}>
+            <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem', opacity: 0.5 }}>📤</div>
+            <h3 style={{ fontSize: '1.1rem', fontWeight: '500', marginBottom: '0.25rem' }}>No sent requests</h3>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem' }}>You haven't sent any connection requests yet.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem', marginBottom: '3rem' }}>
+            {sentRequests.map(request => (
+              <UserCard 
+                key={request._id} 
+                user={request.receiver}
+                sentMode={true}
+                requestId={request._id}
+                onCancel={handleCancelRequest}
               />
             ))}
           </div>
