@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 
 const UserCard = ({ user, onAction, reviewMode, requestId, connectionMode, onUnfollow, sentMode, onCancel }) => {
   const [actionLoading, setActionLoading] = useState(null);
@@ -169,7 +170,7 @@ const UserCard = ({ user, onAction, reviewMode, requestId, connectionMode, onUnf
           </div>
         )}
 
-        {/* Connection Mode (Unfollow) */}
+        {/* Connection Mode (Chat and Unfollow) */}
         {connectionMode && onUnfollow && (
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 'auto', gap: '1rem', alignItems: 'center' }}>
             <span style={{
@@ -185,6 +186,28 @@ const UserCard = ({ user, onAction, reviewMode, requestId, connectionMode, onUnf
             }}>
               ✓ Connected
             </span>
+            <Link 
+              to={`/chat/${user._id}`}
+              className="card-btn-chat"
+              style={{
+                backgroundColor: '#3b82f6',
+                color: 'white',
+                border: 'none',
+                padding: '0.45rem 1rem',
+                borderRadius: 'var(--radius-md)',
+                fontWeight: '600',
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                textDecoration: 'none',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '0.3rem',
+                transition: 'all 0.2s ease',
+                boxShadow: '0 2px 8px rgba(59, 130, 246, 0.3)'
+              }}
+            >
+              💬 Chat
+            </Link>
             <button
               onClick={onUnfollow}
               className="card-btn-reject"
