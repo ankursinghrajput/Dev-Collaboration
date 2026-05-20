@@ -8,7 +8,7 @@ const generateRoomId = (userId, targetUserId) => {
 const initializeSocket = (server) => {
     const io = Socket(server, {
         cors: {
-            origin: "http://localhost:5173",
+            origin: ["http://localhost:5173", "http://localhost:5174"],
             credentials: true,
         },
     });
@@ -17,23 +17,26 @@ const initializeSocket = (server) => {
         // Handle Events
         socket.on("joinChat", ({ firstname, userId, targetUserId }) => {
             const roomId = generateRoomId(userId, targetUserId);
-            console.log(firstname + "joined room" + roomId);
+            socket.data.roomId = roomId;
+            socket.data.userId = userId;
+            console.log(`${firstname} joined room ${roomId}`);
             socket.join(roomId);
         });
 
-        socket.on("sendMessage", ({firstname, message, userId, targetUserId}) => {
+        socket.on("sendMessage", ({ firstname, message, userId, targetUserId }) => {
             const roomId = generateRoomId(userId, targetUserId);
-            io.to(roomId).emit("receiveMessage", { firstname, message, userId });
+            socket.to(roomId).emit("receiveMessage", { firstname, message, userId });
         });
 
         socket.on("typing", ({ userId, targetUserId }) => {
             const roomId = generateRoomId(userId, targetUserId);
-            io.to(roomId).emit("userTyping", { userId });
+            socket.to(roomId).emit("userTyping", { userId });
         });
 
-        socket.on("disconnect", ({ userId, targetUserId }) => {
-            const roomId = generateRoomId(userId, targetUserId);
-            io.to(roomId).emit("userDisconnected", { userId });
+        socket.on("disconnect", () => {
+            if (socket.data.roomId && socket.data.userId) {
+                io.to(socket.data.roomId).emit("userDisconnected", { userId: socket.data.userId });
+            }
         });
 
     });
